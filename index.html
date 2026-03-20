@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Async Weather Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://images.unsplash.com/photo-1555344158-7d1d971af150?q=80&w=1174&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center/cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            width: 1100px;
+        }
+
+        /* MAIN CARD */
+        .parent-card {
+            display: flex;
+            height: 500px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        /* LEFT SIDE (IMPORTANT FIX) */
+        .card:first-child {
+            flex: 1.3;
+            background: linear-gradient(rgba(0, 0, 0, 0.4),
+                    rgba(0, 0, 0, 0.4)),
+                url('https://images.unsplash.com/photo-1747158889461-0066de6e9960?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover;
+
+            color: white;
+            display: flex;
+            align-items: flex-end;
+            padding: 40px;
+
+
+        }
+
+
+        /* RIGHT SIDE (GLASS) */
+        .card:last-child {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(18px);
+            padding: 30px;
+            color: white;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* REMOVE OLD CARD STYLE */
+        .card {
+            border-radius: 0;
+        }
+
+        /* WEATHER BIG TEXT */
+        #weather {
+            width: 100%;
+        }
+
+        #weather .weather-item {
+            border: none;
+            background: transparent;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        /* BIG TEMP */
+        #weather .weather-item:first-child span {
+            font-size: 80px;
+            font-weight: bold;
+        }
+
+        /* CITY NAME */
+        #weather .weather-item:nth-child(2) span {
+            font-size: 30px;
+        }
+
+        /* SEARCH */
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            color: white;
+        }
+
+        /* BUTTON */
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        /* HISTORY */
+        .history button {
+            display: block;
+            margin: 10px 0;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* TITLE */
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .card:first-child {
+            transition: background 0.6s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>🌤 Async Weather Tracker</h1>
+
+        <div class="parent-card">
+
+            <!-- LEFT (WEATHER BIG) -->
+            <div class="card left-card">
+                <div id="weather"></div>
+            </div>
+
+            <!-- RIGHT (GLASS PANEL) -->
+            <div class="card">
+                <h3>Search City</h3>
+                <div class="input-group">
+                    <input id="cityInput" placeholder="Another location">
+                    <button id="searchBtn">🔍</button>
+                </div>
+
+                <h3>Search History</h3>
+                <div class="history" id="history"></div>
+            </div>
+
+        </div>
+
+        <script>
+            localStorage.removeItem("weatherHistory");
+            const API_KEY = "b4521f3a7cc11f2b97185fdf2a95e3f4";
+            //    const API_KEY = "af9f63c59a649f27d602b96a43d0bd14";
+
+            const weatherBox = document.getElementById("weather");
+            const historyBox = document.getElementById("history");
+
+            /* ---------- WEATHER FETCH ---------- */
+            async function getWeather(city) {
+
+                // small delay for smoother UI
+                // await new Promise(r => setTimeout(r, 500));
+
+                const res = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+                );
+                if (!res.ok) {
+                    alert("city not found");
+                    throw new Error("City not found");
+                }
+                const data = await res.json();
+                return data;
+            }
+
+            /* ---------- BUTTON CLICK ---------- */
+            document.getElementById("searchBtn").onclick = () => {
+                const city = cityInput.value.trim();
+                if (city) {
+                    search(city);
+                }
+            };
+
+            /* ---------- UI RENDER ---------- */
+            function renderWeather(d) {
+                weatherBox.innerHTML = `
+        <div class="weather-item">
+            <span style="font-size:70px">${Math.round(d.main.temp)}°</span>
+        </div>
+
+        <div class="weather-item">
+            <span style="font-size:28px">${d.name}</span>
+        </div>
+
+        <div class="weather-item">
+            <span>${d.weather[0].main}</span>
+        </div>
+
+        <br>
+
+        <div class="weather-item"><label>Humidity</label><span>${d.main.humidity}%</span></div>
+        <div class="weather-item"><label>Wind</label><span>${d.wind.speed} m/s</span></div>
+    `;
+            }
+
+            /* ---------- SAVE SEARCH HISTORY ---------- */
+            function saveHistory(city) {
+                let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+
+                // avoid duplicates
+                if (!history.includes(city)) {
+                    history.push(city);
+                }
+
+                localStorage.setItem("weatherHistory", JSON.stringify(history));
+                showHistory(); // update UI instantly
+            }
+
+            /* ---------- SHOW HISTORY ---------- */
+            function showHistory() {
+                let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+
+                historyBox.innerHTML = "";
+
+                history.forEach(city => {
+                    const btn = document.createElement("button");
+                    btn.innerText = city;
+
+                    btn.onclick = () => {
+                        search(city);
+                    };
+
+                    historyBox.appendChild(btn);
+                });
+            }
+
+            /* ---------- SEARCH FUNCTION ---------- */
+            async function search(city) {
+                weatherBox.innerHTML = "";
+
+                try {
+                    const data = await getWeather(city);
+
+                    renderWeather(data);
+
+
+                    changeBackground(
+                        data.weather[0].main,
+                        data.weather[0].description
+                    );
+
+                    saveHistory(data.name);
+
+                } catch (error) {
+                    weatherBox.innerHTML = `<p style="color:red">${error.message}</p>`;
+                }
+            }
+
+            /* ---------- ENTER KEY SEARCH ---------- */
+            cityInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    const city = cityInput.value.trim();
+                    if (city) {
+                        search(city);
+                    }
+                }
+            });
+            /* ---------- INITIAL LOAD ---------- */
+            showHistory();
+
+
+
+            function changeBackground(weatherMain, description) {
+                const leftCard = document.querySelector(".left-card");
+                const w = description.toLowerCase();
+
+                if (w.includes("rain")) {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+                else if (w.includes("cloud")) {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1601297183305-6df142704ea2?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+                else if (w.includes("clear")) {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1500368979884-522eb3985d4a?q=80&w=686&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+                else if (w.includes("mist") || w.includes("haze")) {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1585508889431-a1d0d9c5a324?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+                else if (w.includes("snow")) {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1486944670663-e0a2ea5018eb?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+                else {
+                    leftCard.style.background =
+                        "linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://plus.unsplash.com/premium_photo-1681955753413-2573391976cd?q=80&w=1338&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') center/cover";
+                }
+            }
+
+
+
+        </script>
+</body>
+
+</html>
